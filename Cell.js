@@ -34,7 +34,7 @@ class Cell {
         let possibleMoves = this.piece.getPossibleMoves(grid);
         for (let i = 0; i < possibleMoves.length; i++) {
             fill(0, 255, 0, 70);
-            rect(possibleMoves[i].x, possibleMoves[i].y, possibleMoves[i].size, possibleMoves[i].size);
+            rect(possibleMoves[i].cell.x, possibleMoves[i].cell.y, possibleMoves[i].cell.size, possibleMoves[i].cell.size);
         }
     }
 }

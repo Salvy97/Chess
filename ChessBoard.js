@@ -40,7 +40,7 @@ class ChessBoard {
         this.board[0][1].piece = new Knight(0, 1, width / 8, Faction.BLACK, true);
         this.board[0][2].piece = new Bishop(0, 2, width / 8, Faction.BLACK, true);
         this.board[0][3].piece = new Queen(0, 3, width / 8, Faction.BLACK, true);
-        this.board[0][4].piece = new King(0, 4, width / 8, Faction.BLACK, true);
+        this.board[0][4].piece = new King(0, 4, width / 8, Faction.BLACK, true, true);
         this.board[0][5].piece = new Bishop(0, 5, width / 8, Faction.BLACK, true);
         this.board[0][6].piece = new Knight(0, 6, width / 8, Faction.BLACK, true);
         this.board[0][7].piece = new Rook(0, 7, width / 8, Faction.BLACK, true);
@@ -51,7 +51,7 @@ class ChessBoard {
         this.board[7][1].piece = new Knight(7, 1, width / 8, Faction.WHITE, true);
         this.board[7][2].piece = new Bishop(7, 2, width / 8, Faction.WHITE, true);
         this.board[7][3].piece = new Queen(7, 3, width / 8, Faction.WHITE, true);
-        this.board[7][4].piece = new King(7, 4, width / 8, Faction.WHITE, true);
+        this.board[7][4].piece = new King(7, 4, width / 8, Faction.WHITE, true, true);
         this.board[7][5].piece = new Bishop(7, 5, width / 8, Faction.WHITE, true);
         this.board[7][6].piece = new Knight(7, 6, width / 8, Faction.WHITE, true);
         this.board[7][7].piece = new Rook(7, 7, width / 8, Faction.WHITE, true);
@@ -69,16 +69,17 @@ class ChessBoard {
 
     isInPossibleMoves(nextCell, possibleMoves) {
         for (let move of possibleMoves)
-            if (move.i === nextCell.i && move.j === nextCell.j)
-                return true;
-        return false;
+            if (move.cell.i === nextCell.i && move.cell.j === nextCell.j)
+                return move;
+        return undefined;
     }
 
     movePiece(currGrid, currCell, nextCell) {
         currGrid[nextCell.i][nextCell.j].changePiece(currCell.piece);
         currGrid[nextCell.i][nextCell.j].piece.move(currGrid[nextCell.i][nextCell.j].x, currGrid[nextCell.i][nextCell.j].y, 0);
-        if (currGrid[nextCell.i][nextCell.j].piece.finalizeMove())
+        if (currGrid[nextCell.i][nextCell.j].piece instanceof Pawn && currGrid[nextCell.i][nextCell.j].piece.finalizeMove())
             currGrid[nextCell.i][nextCell.j].piece = new Queen(nextCell.i, nextCell.j, width / 8, currGrid[nextCell.i][nextCell.j].piece.faction, true);
+        currGrid[nextCell.i][nextCell.j].piece.finalizeMove();
         currCell.piece = undefined;
     }
 
@@ -94,7 +95,7 @@ class ChessBoard {
         for (let i = 0; i < possibleMoves.length; i++) {
             let currCell = this.currMovingCell.clone();
             let newGrid = this.copyGrid();
-            this.movePiece(newGrid, currCell, { i: possibleMoves[i].i, j: possibleMoves[i].j })
+            this.movePiece(newGrid, currCell, { i: possibleMoves[i].cell.i, j: possibleMoves[i].cell.j })
             if (!this.isInCheck(newGrid))
                 mustDoMoves.push(possibleMoves[i]);
         }
@@ -126,8 +127,13 @@ class ChessBoard {
                 let nextCell = this.canMoveTo(mouseX, mouseY, this.currMovingCell.piece.faction);
                 let possibleMoves = this.currMovingCell.piece.getPossibleMoves(this.board);
                 let mustDoMoves = this.getMustDoMoves(possibleMoves);
-                if (nextCell && this.isInPossibleMoves(nextCell, mustDoMoves)) {
-                    this.movePiece(this.board, this.currMovingCell, nextCell);
+                let move = this.isInPossibleMoves(nextCell, mustDoMoves);
+                if (nextCell && move) {
+                    console.log(move);
+                    if (!move.castle.isCastling)
+                        this.movePiece(this.board, this.currMovingCell, nextCell);
+                    else
+                        this.castle(this.currentPlayer, move.castle.direction)
                     if (this.currentPlayer === "white") this.currentPlayer = "black";
                     else this.currentPlayer = "white";
                     console.log("position fen " + this.constructFen() + " b KQkq - 0 1");
@@ -147,12 +153,12 @@ class ChessBoard {
                 if (this.currentPlayer === "white" && currGrid[i][j].piece && currGrid[i][j].piece.faction === "black") {
                     let possibleMoves = currGrid[i][j].piece.getPossibleMoves(currGrid);
                     for (let k = 0; k < possibleMoves.length; k++)
-                        if (currGrid[possibleMoves[k].i][possibleMoves[k].j].piece && currGrid[possibleMoves[k].i][possibleMoves[k].j].piece.faction === "white" && currGrid[possibleMoves[k].i][possibleMoves[k].j].piece instanceof King)
+                        if (currGrid[possibleMoves[k].cell.i][possibleMoves[k].cell.j].piece && currGrid[possibleMoves[k].cell.i][possibleMoves[k].cell.j].piece.faction === "white" && currGrid[possibleMoves[k].cell.i][possibleMoves[k].cell.j].piece instanceof King)
                             return true;
                 } else if (this.currentPlayer === "black" && currGrid[i][j].piece && currGrid[i][j].piece.faction === "white") {
                     let possibleMoves = currGrid[i][j].piece.getPossibleMoves(currGrid);
                     for (let k = 0; k < possibleMoves.length; k++)
-                        if (currGrid[possibleMoves[k].i][possibleMoves[k].j].piece && currGrid[possibleMoves[k].i][possibleMoves[k].j].piece.faction === "black" && currGrid[possibleMoves[k].i][possibleMoves[k].j].piece instanceof King)
+                        if (currGrid[possibleMoves[k].cell.i][possibleMoves[k].cell.j].piece && currGrid[possibleMoves[k].cell.i][possibleMoves[k].cell.j].piece.faction === "black" && currGrid[possibleMoves[k].i][possibleMoves[k].cell.j].piece instanceof King)
                             return true;
                 }
             }
@@ -176,7 +182,7 @@ class ChessBoard {
                     let possibleMoves = this.board[i][j].piece.getPossibleMoves(this.board);
                     for (let k = 0; k < possibleMoves.length; k++) {
                         let newGrid = this.copyGrid();
-                        this.movePiece(newGrid, newGrid[i][j], { i: possibleMoves[k].i, j: possibleMoves[k].j });
+                        this.movePiece(newGrid, newGrid[i][j], { i: possibleMoves[k].cell.i, j: possibleMoves[k].cell.j });
                         if (!this.isInCheck(newGrid))
                             cells.push(newGrid[i][j]);
                     }
@@ -184,7 +190,7 @@ class ChessBoard {
                     let possibleMoves = this.board[i][j].piece.getPossibleMoves(grid);
                     for (let k = 0; k < possibleMoves.length; k++) {
                         let newGrid = copyGrid();
-                        this.movePiece(newGrid, newGrid[i][j], { i: possibleMoves[k].i, j: possibleMoves[k].j });
+                        this.movePiece(newGrid, newGrid[i][j], { i: possibleMoves[k].cell.i, j: possibleMoves[k].cell.j });
                         if (!this.isInCheck(newGrid))
                             cells.push(newGrid[i][j]);
                     }
@@ -232,5 +238,30 @@ class ChessBoard {
                 fen += "/";
         }
         return fen;
+    }
+
+    castle(faction, direction) {
+        console.log(direction);
+        if (direction === "left") {
+            if (faction === "white") {
+                this.movePiece(this.board, this.board[7][0], this.board[7][3]);
+                this.movePiece(this.board, this.board[7][4], this.board[7][2]);
+            } else {
+                this.movePiece(this.board, this.board[0][0], this.board[0][3]);
+                this.movePiece(this.board, this.board[0][4], this.board[0][2]);
+            }
+        } else {
+            if (faction === "white") {
+                this.movePiece(this.board, this.board[7][4], this.board[7][6]); 
+                this.movePiece(this.board, this.board[7][7], this.board[7][5]);
+            } else {
+                this.movePiece(this.board, this.board[0][7], this.board[0][5]);
+                this.movePiece(this.board, this.board[0][4], this.board[0][6]);
+            }
+        }
+    }
+
+    isCheckMate() {
+        return this.isInCheck(this.board) && this.blockCheckCells.length === 0;
     }
 }

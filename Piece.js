@@ -23,10 +23,10 @@ class Piece {
         this.y = y - (this.size / 2) * centered;
     }
 
-    addMove(possibleMoves, grid, i, j) {
+    addMove(possibleMoves, grid, i, j, isCastling, direction) {
         if (i >= 0 && i < 8 && j >= 0 && j < 8)
             if (!grid[i][j].piece || (grid[i][j].piece && grid[i][j].piece.faction !== this.faction))
-                possibleMoves.push(grid[i][j]);
+                possibleMoves.push({ cell: grid[i][j], castle: { isCastling: isCastling, direction: direction } });
     }
 
     finalizeMove() {}

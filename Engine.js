@@ -11,7 +11,6 @@ class Engine {
 
         let engineInstance = this;
         this.engine.onmessage = function(event) {
-            console.log(event.data);
             if (!engineInstance.alreadyMoved && engineInstance.chessBoard.currentPlayer === engineInstance.faction) {
                 let r = event.data;
                 if (r.includes("bestmove")) {
@@ -62,10 +61,16 @@ class Engine {
         if (movingCell && nextCell) {
             console.log("best move " + move);
             console.log("moved {" + movingCell.i + " - " + movingCell.j + "} into {" + nextCell.i + " - " + nextCell.j + "}");
-            this.chessBoard.movePiece(this.chessBoard.board, movingCell, { i: nextCell.i, j: nextCell.j });
+            if (movingCell.piece && movingCell.piece instanceof King && movingCell.i === 0 && movingCell.j === 4 && nextCell.i === 0) {
+                if (nextCell.j === 2) this.chessBoard.castle(this.faction, "left");
+                else if (nextCell.j === 6) this.chessBoard.castle(this.faction, "right");
+                else this.chessBoard.movePiece(this.chessBoard.board, movingCell, { i: nextCell.i, j: nextCell.j });
+            } else
+                this.chessBoard.movePiece(this.chessBoard.board, movingCell, { i: nextCell.i, j: nextCell.j });
             if (this.faction === "white") this.chessBoard.currentPlayer = "black";
             else this.chessBoard.currentPlayer = "white";
             this.engine.postMessage("position fen " + this.chessBoard.constructFen() + " w KQkq - 0 1");
+            if (this.chessBoard.isCheckMate()) noLoop();
         }
     }
 }
